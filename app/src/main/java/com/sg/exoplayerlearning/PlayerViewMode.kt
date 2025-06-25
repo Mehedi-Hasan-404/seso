@@ -72,7 +72,6 @@ class PlayerViewModel: ViewModel() {
                         setMediaItems(mediaItems)
                         prepare()
                         playWhenReady = true
-                        play()
                     }
             }
 

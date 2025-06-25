@@ -55,12 +55,9 @@ dependencies {
 
     // For media playback using ExoPlayer
     implementation(libs.media3.exoplayer)
-    // For DASH playback support with ExoPlayer
-    implementation(libs.media3.exoplayer.dash)
     // For building media playback UIs using Jetpack Compose
     implementation(libs.media3.ui.compose)
     // Advanced usage or customization of the data source
-    implementation(libs.media3.datasource)
     implementation(libs.media3.datasource.okhttp)
 
     // OkHttp client for data source

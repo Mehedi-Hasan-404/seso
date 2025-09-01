@@ -59,6 +59,7 @@ class PlayerViewModel @Inject constructor(
 
     //endregion
 
+    // region player and media items creation
     fun createPlayerWithMediaItems(context: Context) {
         if (_playerState.value == null) {
 
@@ -110,6 +111,7 @@ class PlayerViewModel @Inject constructor(
             .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
         return cacheDataSourceFactory
     }
+    // endregion
 
     //region User actions
     fun executeAction(playerAction: PlayerAction) {
@@ -201,8 +203,6 @@ class PlayerViewModel @Inject constructor(
             seekTo(previousIndex, seekPosition)
         }
     }
-
-    private fun currentMediaItemTag(): String? = _playerState.value?.currentMediaItem?.localConfiguration?.tag as? String
     //endregion
 
     //region player listeners
@@ -215,6 +215,7 @@ class PlayerViewModel @Inject constructor(
                         checkIfSubTitlesNeedToBeEnabled(it)
                     }
                 }
+
                 override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
                     currentMediaItem = mediaItem
                     _playerState.value?.currentMediaItemIndex?.let {
@@ -224,6 +225,63 @@ class PlayerViewModel @Inject constructor(
             }
         )
     }
+
+    private fun addAnalytics() {
+        if (::analytics.isInitialized.not()) {
+            analytics = LearningsPlayerAnalytics(_playerState.value)
+        }
+        _playerState.value?.addAnalyticsListener(analytics)
+    }
+    // endregion
+
+    //region Player position updates
+    private fun checkAndResetPreviousMediaItemProgress(currentMediaItemIndex: Int) {
+        val previousIndex = currentMediaItemIndex - 1
+        if (previousIndex >= 0) {
+            _playerState.value?.getMediaItemAt(previousIndex)?.let { previousMediaItem ->
+                hashMapVideoStates[previousMediaItem.mediaId]?.let { previousVideoItem ->
+                    if (previousVideoItem.duration - previousVideoItem.currentPosition <= 3000) {
+                        hashMapVideoStates[previousMediaItem.mediaId] = previousVideoItem.copy(currentPosition = 0)
+                    }
+                }
+            }
+        }
+    }
+
+    fun updateCurrentPosition(id: String, position: Long, duration: Long) {
+        hashMapVideoStates[id] = hashMapVideoStates[id]?.copy(currentPosition = position, duration = duration)
+            ?: VideoItem(currentPosition = position, duration = duration)
+    }
+    //endregion
+
+    // region player playback speed configuration
+
+    fun updatePlaybackSpeed(value: PlayerConfigState) {
+        _playerConfigState.update { value }
+        _playerState.value?.setPlaybackSpeed(value.playbackSpeed)
+    }
+
+    // endregion
+
+    // region Sub title or captions configuration
+    private fun getMediaItemWithSubTitle(): MediaItem {
+        val subtitleConfiguration = MediaItem.SubtitleConfiguration.Builder(
+            Uri.parse(Video_5_sub_title)
+        )
+            .setLanguage("en")
+            .setMimeType("application/ttml+xml")
+            .setSelectionFlags(C.SELECTION_FLAG_DEFAULT)
+            .build()
+
+        return MediaItem.Builder()
+            .setUri(Video_5)
+            .setMediaId("Video_5")
+            .setTag("Video_5")
+            .setSubtitleConfigurations(listOf(subtitleConfiguration))
+            .build()
+    }
+
+    fun isCaptionsAvailableForVideo(url: String): Boolean = hashMapVideoStates[url]?.captionsAvailable ?: false
 
     private fun checkIfSubTitlesNeedToBeEnabled(mediaItem: MediaItem) {
         playerState.value?.let { _player ->
@@ -257,68 +315,12 @@ class PlayerViewModel @Inject constructor(
             .setOverrideForType(override)
             .build()
     }
-
-
-    private fun addAnalytics() {
-        if (::analytics.isInitialized.not()) {
-            analytics = LearningsPlayerAnalytics(_playerState.value)
-        }
-        _playerState.value?.addAnalyticsListener(analytics)
-    }
-    // endregion
-
-    //region Player position updates
-    private fun checkAndResetPreviousMediaItemProgress(currentMediaItemIndex: Int) {
-        val previousIndex = currentMediaItemIndex - 1
-        if (previousIndex >= 0) {
-            _playerState.value?.getMediaItemAt(previousIndex)?.let { previousMediaItem ->
-                hashMapVideoStates[previousMediaItem.mediaId]?.let { previousVideoItem ->
-                    if (previousVideoItem.duration - previousVideoItem.currentPosition <= 3000) {
-                        hashMapVideoStates[previousMediaItem.mediaId] = previousVideoItem.copy(currentPosition = 0)
-                    }
-                }
-            }
-        }
-    }
-
-    fun updateCurrentPosition(id: String, position: Long, duration: Long) {
-        hashMapVideoStates[id] = hashMapVideoStates[id]?.copy(currentPosition = position, duration = duration)
-            ?: VideoItem(currentPosition = position, duration = duration)
-    }
-    //endregion
-
-    // region player config
-
-    fun updatePlaybackSpeed(value: PlayerConfigState) {
-        _playerConfigState.update { value }
-        _playerState.value?.setPlaybackSpeed(value.playbackSpeed)
-    }
-
-    fun isCaptionsAvailableForVideo(url: String): Boolean = hashMapVideoStates[url]?.captionsAvailable ?: false
-
     // endregion
 
     override fun onCleared() {
         super.onCleared()
         audioFocusHandler.abandonAudioManager()
         _playerState.value?.release()
-    }
-
-    private fun getMediaItemWithSubTitle(): MediaItem {
-        val subtitleConfiguration = MediaItem.SubtitleConfiguration.Builder(
-            Uri.parse(Video_5_sub_title)
-        )
-            .setLanguage("en")
-            .setMimeType("application/ttml+xml")
-            .setSelectionFlags(C.SELECTION_FLAG_DEFAULT)
-            .build()
-
-        return MediaItem.Builder()
-            .setUri(Video_5)
-            .setMediaId("Video_5")
-            .setTag("Video_5")
-            .setSubtitleConfigurations(listOf(subtitleConfiguration))
-            .build()
     }
 }
 

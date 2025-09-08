@@ -60,9 +60,8 @@ class PlayerActivity : ComponentActivity() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun getPipParams(): PictureInPictureParams? {
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) return null
-
         return PictureInPictureParams.Builder()
             .setAspectRatio(Rational(16,9))
             .setSourceRectHint(playerRect)

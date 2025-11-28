@@ -2,34 +2,46 @@ name: Build Debug APK
 
 on:
   push:
-    branches: [ "feature-rich-player" ]       
+    # Triggers on the specific feature branch AND any branch starting with 'feature/'
+    # Also triggers on 'main' or 'master' (replace 'main' with 'master' if needed)
+    branches:
+      - 'main'
+      - 'master'
+      - 'feature-rich-player'
+      - 'feature/**' # <--- New: Wildcard for any feature branch (e.g., feature/login-screen)
+
   pull_request:
-    branches: [ "feature-rich-player" ]       
-  workflow_dispatch:
+    # Runs when a PR is opened targeting any of these branches
+    branches:
+      - 'main'
+      - 'master'
+      - 'feature-rich-player'
+
+  workflow_dispatch: # Allows manual running via the Actions tab
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: 📦 Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: ☕ Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: gradle
 
-      - name: Grant execute permission for gradlew
+      - name: 🔑 Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build Debug APK
+      - name: 🔨 Build Debug APK
         run: ./gradlew assembleDebug
 
-      - name: Upload Debug APK
+      - name: ⬆️ Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: debug-apk
+          name: debug-apk-${{ github.ref_name }} # Creates a unique artifact name
           path: app/build/outputs/apk/debug/app-debug.apk

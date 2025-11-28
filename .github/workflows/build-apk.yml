@@ -2,9 +2,9 @@ name: Build Debug APK
 
 on:
   push:
-    branches: [ "main" ]       # <--- CHANGED FROM 'main' TO 'master'
+    branches: [ "feature-rich-player" ]       
   pull_request:
-    branches: [ "main" ]       # <--- CHANGED FROM 'main' TO 'master'
+    branches: [ "feature-rich-player" ]       
   workflow_dispatch:
 
 jobs:
